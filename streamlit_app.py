@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, time
+import numpy as np
+from datetime import datetime, time, date, timedelta
 import pytz
 
 # Configure the page
@@ -43,6 +44,12 @@ def load_and_preprocess_data():
             
             # Replace "Department" with "Dept"
             df['OFFER DEPT'] = df['OFFER DEPT'].str.replace('Department', 'Dept', regex=False)
+        
+        # Add whitespace after each comma in instructor names
+        if 'INSTRUCTOR' in df.columns:
+            df['INSTRUCTOR'] = df['INSTRUCTOR'].str.replace(',', ', ', regex=False)
+            # Remove any double spaces that might have been created
+            df['INSTRUCTOR'] = df['INSTRUCTOR'].str.replace('  ', ' ', regex=False)
         
         # Create a WEEKDAY column by combining Mon, Tue, Wed, etc.
         weekday_columns = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
@@ -613,6 +620,13 @@ def display_current_classes_page(df):
     timezone_info = "GMT+8"
     
     st.markdown(f"**Current Time (Hong Kong {timezone_info}):** {current_time} | **Date:** {current_date} | **Day:** {current_weekday}")
+    
+    # Refresh button
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("🔄 Refresh Current Time", type="primary", use_container_width=True):
+            st.rerun()
+    
     st.markdown("---")
     
     # Get current classes
@@ -673,6 +687,13 @@ def display_upcoming_classes_page(df):
     timezone_info = "GMT+8"
     
     st.markdown(f"**Current Time (Hong Kong {timezone_info}):** {current_time} | **Date:** {current_date} | **Day:** {current_weekday}")
+    
+    # Refresh button
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        if st.button("🔄 Refresh Current Time", type="primary", use_container_width=True):
+            st.rerun()
+    
     st.markdown("---")
     
     # Get upcoming classes
