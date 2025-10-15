@@ -508,32 +508,44 @@ def display_course_item(row):
     """Display a single course item in a compact format"""
     with st.container():
         # Create a more compact layout using columns with smaller spacing
-        col1, col2, col3, col4 = st.columns([3, 2, 2, 2])
-        
+        col1, col2, col3 = st.columns([3, 3, 3])
+        cc = {
+            "NAWD": "green",
+            "RPG": "violet",
+            "TPG": "red",
+            "UG": "blue",
+            "UGDE": "blue",
+            "UGME": "blue",
+        }
+        wc = {
+            'MON': "red",
+            'TUE': "orange", 
+            'WED': "yellow",
+            'THU': "green",
+            'FRI': "blue",
+            'SAT': "violet",
+            'SUN': "gray"
+        }
         with col1:
             course_code = row.get('COURSE CODE', 'N/A')
             course_title = row.get('COURSE TITLE', 'N/A')
-            st.markdown(f"**{course_code}** - {course_title}")
+            st.markdown(f"**{course_code} - {course_title}**")
             class_section = row.get('CLASS SECTION', 'N/A')
             class_number = format_class_number(row.get('CLASS NUMBER', 'N/A'))
-            st.markdown(f"Section {class_section} • Class No. {class_number}")
+            curriculum = row.get('ACAD_CAREER', 'N/A')
+            st.markdown(f"Section {class_section} • Class No. {class_number} • **:{cc[curriculum]}[{curriculum}]**")
         
         with col2:
             weekday = row.get('WEEKDAY', 'N/A')
             start_time = format_time(row.get('START TIME'))
             end_time = format_time(row.get('END TIME'))
-            st.markdown(f"**{weekday}** {start_time}-{end_time}")
             venue = row.get('VENUE', 'N/A')
-            st.markdown(f"**Venue:** {venue}")
-        
-        with col3:
+            st.markdown(f"**:{wc[weekday]}[{weekday}] {start_time}-{end_time}** @ Venue: **{venue}**")
             start_date = format_date(row.get('START DATE'))
             end_date = format_date(row.get('END DATE'))
-            st.markdown(f"{start_date} to {end_date}")
-            curriculum = row.get('ACAD_CAREER', 'N/A')
-            st.markdown(f"**Curriculum:** {curriculum}")
-        
-        with col4:
+            st.markdown(f"**Date:** {start_date} to {end_date}")
+
+        with col3:
             dept = row.get('OFFER DEPT', 'N/A')
             st.markdown(f"{dept}")
             # Truncate instructors if too long
@@ -622,8 +634,8 @@ def display_current_classes_page(df):
     st.markdown(f"**Current Time (Hong Kong {timezone_info}):** {current_time} | **Date:** {current_date} | **Day:** {current_weekday}")
     
     # Refresh button
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
+    col1, col2, col3 = st.columns([3, 3, 3])
+    with col1:
         if st.button("🔄 Refresh Current Time", type="primary", use_container_width=True):
             st.rerun()
     
@@ -656,7 +668,7 @@ def display_current_classes_page(df):
         st.info("No classes are currently running.")
         st.markdown("💡 *All classes have either ended or haven't started yet.*")
     else:
-        st.markdown(f"**Found {len(current_classes)} classes currently running**")
+        st.markdown(f"**:green[Found {len(current_classes)} classes currently running]**")
         
         # Pagination
         if 'current_display_count' not in st.session_state:
@@ -689,8 +701,8 @@ def display_upcoming_classes_page(df):
     st.markdown(f"**Current Time (Hong Kong {timezone_info}):** {current_time} | **Date:** {current_date} | **Day:** {current_weekday}")
     
     # Refresh button
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
+    col1, col2, col3 = st.columns([3, 3, 3])
+    with col1:
         if st.button("🔄 Refresh Current Time", type="primary", use_container_width=True):
             st.rerun()
     
@@ -723,7 +735,7 @@ def display_upcoming_classes_page(df):
         st.info("No more classes scheduled for today.")
         st.markdown("🎉 *You're done for the day!*")
     else:
-        st.markdown(f"**Found {len(upcoming_classes)} upcoming classes today**")
+        st.markdown(f"**:green[Found {len(upcoming_classes)} upcoming classes today]**")
         
         # Pagination
         if 'upcoming_display_count' not in st.session_state:
@@ -780,7 +792,7 @@ def main():
         filtered_df = apply_sorting(filtered_df, sort_by, sort_order)
         
         # Display results count
-        st.markdown(f"**Found {len(filtered_df)} matching records**")
+        st.markdown(f"**:green[Found {len(filtered_df)} matching records]**")
         
         # Pagination
         if 'display_count' not in st.session_state:
