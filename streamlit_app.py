@@ -176,6 +176,26 @@ def load_and_preprocess_data():
         return pd.DataFrame()
 
 
+def get_course_code_prefixes(df):
+    """Extract unique course code prefixes (first 4 letters) from the dataset"""
+    if 'COURSE CODE' not in df.columns:
+        return []
+    
+    # Get all course codes, filter out empty/invalid values
+    course_codes = df['COURSE CODE'].unique()
+    course_codes = [code for code in course_codes if code != '' and pd.notna(code) and code != 'nan']
+    
+    # Extract prefixes (first 4 characters)
+    prefixes = set()
+    for code in course_codes:
+        if len(code) >= 4:
+            prefix = code[:4].upper()
+            prefixes.add(prefix)
+    
+    # Convert to sorted list
+    return sorted(list(prefixes))
+
+
 def get_hk_time():
     """Get current time in Hong Kong timezone"""
     now_utc = datetime.now(pytz.utc)
@@ -188,6 +208,19 @@ def create_filters_panel(df):
     st.sidebar.header("🔍 Filters & Sorting")
 
     filters = {}
+
+    # Course Code StartsWith filter (NEW)
+    if 'COURSE CODE' in df.columns:
+        prefixes = get_course_code_prefixes(df)
+        if prefixes:
+            prefixes = ['All'] + prefixes
+            selected_prefix = st.sidebar.selectbox(
+                "Course Code StartsWith",
+                prefixes,
+                key="course_code_startswith_filter"
+            )
+            if selected_prefix != 'All':
+                filters['course_code_startswith'] = selected_prefix
 
     # Course Code filter
     if 'COURSE CODE' in df.columns:
@@ -398,6 +431,19 @@ def create_current_classes_filters_panel(df):
 
     filters = {}
 
+    # Course Code StartsWith filter (NEW)
+    if 'COURSE CODE' in df.columns:
+        prefixes = get_course_code_prefixes(df)
+        if prefixes:
+            prefixes = ['All'] + prefixes
+            selected_prefix = st.sidebar.selectbox(
+                "Course Code StartsWith",
+                prefixes,
+                key="current_course_code_startswith_filter"
+            )
+            if selected_prefix != 'All':
+                filters['course_code_startswith'] = selected_prefix
+
     # Course Code filter
     if 'COURSE CODE' in df.columns:
         course_codes = df['COURSE CODE'].unique()
@@ -495,6 +541,19 @@ def create_upcoming_classes_filters_panel(df):
     st.sidebar.header("🔍 Upcoming Classes Filters")
 
     filters = {}
+
+    # Course Code StartsWith filter (NEW)
+    if 'COURSE CODE' in df.columns:
+        prefixes = get_course_code_prefixes(df)
+        if prefixes:
+            prefixes = ['All'] + prefixes
+            selected_prefix = st.sidebar.selectbox(
+                "Course Code StartsWith",
+                prefixes,
+                key="upcoming_course_code_startswith_filter"
+            )
+            if selected_prefix != 'All':
+                filters['course_code_startswith'] = selected_prefix
 
     # Course Code filter
     if 'COURSE CODE' in df.columns:
@@ -594,8 +653,13 @@ def apply_filters(df, filters):
 
     # Apply column filters
     for column, value in filters.items():
-        if column not in ['date_range', 'time_range', 'venue_provided']:
+        if column not in ['date_range', 'time_range', 'venue_provided', 'course_code_startswith']:
             filtered_df = filtered_df[filtered_df[column] == value]
+
+    # Apply course code startsWith filter (NEW)
+    if 'course_code_startswith' in filters:
+        prefix = filters['course_code_startswith']
+        filtered_df = filtered_df[filtered_df['COURSE CODE'].str.startswith(prefix, na=False)]
 
     # Apply venue provided filter
     if 'venue_provided' in filters and filters['venue_provided']:
