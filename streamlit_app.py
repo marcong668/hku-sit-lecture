@@ -95,10 +95,10 @@ def load_and_preprocess_data():
                 'Business and Econom', 'Business & Economics', regex=False)
 
             # Replace "Faculty of ..." with "... Faculty"
+            df['OFFER DEPT'] = df['OFFER DEPT'].apply(
+                lambda x: x + ' Faculty' if x and x.startswith('Faculty') else x)
             df['OFFER DEPT'] = df['OFFER DEPT'].str.replace(
                 'Faculty of ', '', regex=False)
-            df['OFFER DEPT'] = df['OFFER DEPT'].apply(
-                lambda x: x + ' Faculty' if x and not x.endswith('Faculty') else x)
 
             # Replace "and" with "&"
             df['OFFER DEPT'] = df['OFFER DEPT'].str.replace(
@@ -106,7 +106,7 @@ def load_and_preprocess_data():
 
             # Replace "Department" with "Dept"
             df['OFFER DEPT'] = df['OFFER DEPT'].str.replace(
-                'Department', 'Dept', regex=False)
+                'Department', 'Dept.', regex=False)
 
         # Add whitespace after each comma in instructor names
         if 'INSTRUCTOR' in df.columns:
