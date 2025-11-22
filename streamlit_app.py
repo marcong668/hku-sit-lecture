@@ -149,6 +149,26 @@ def load_and_preprocess_data():
                 df[col] = df[col].apply(
                     lambda x: x if isinstance(x, time) else None)
 
+        # Define special columns that need specific aggregation
+        special_agg = {
+            'START TIME': 'first',
+            'END TIME': 'first'
+        }
+
+        # Automatically add 'first' for all other columns (excluding groupby columns)
+        all_columns = df.columns.tolist()
+        groupby_columns = ['CLASS NUMBER', 'WEEKDAY']
+        other_columns = [
+            col for col in all_columns if col not in groupby_columns]
+
+        agg_dict = special_agg.copy()
+        for col in other_columns:
+            if col not in agg_dict:  # Only add if not already in special_agg
+                agg_dict[col] = 'first'
+
+        # Apply grouping and aggregation
+        df = df.groupby(groupby_columns).agg(agg_dict).reset_index()
+
         return df
 
     except Exception as e:
@@ -269,11 +289,11 @@ def create_filters_panel(df):
         all_times = []
         if 'START TIME' in df.columns:
             start_times = [t for t in df['START TIME'].dropna()
-                           if t != '' and t is not None]
+                           if t is not None and t != '']
             all_times.extend(start_times)
         if 'END TIME' in df.columns:
-            end_times = [t for t in df['END TIME'].dropna() if t !=
-                         '' and t is not None]
+            end_times = [t for t in df['END TIME'].dropna()
+                         if t is not None and t != '']
             all_times.extend(end_times)
 
         if all_times:
@@ -555,8 +575,10 @@ def apply_filters(df, filters):
     if 'time_range' in filters:
         start_time_filter, end_time_filter = filters['time_range']
         # Filter classes that start after or at the selected start time AND end before or at the selected end time
-        time_filtered = filtered_df[filtered_df['START TIME'].notna(
-        ) & filtered_df['END TIME'].notna()]
+        time_filtered = filtered_df[
+            filtered_df['START TIME'].notna() &
+            filtered_df['END TIME'].notna()
+        ]
         filtered_df = time_filtered[
             (time_filtered['START TIME'] >= start_time_filter) &
             (time_filtered['END TIME'] <= end_time_filter)
@@ -579,7 +601,7 @@ def apply_sorting(df, sort_by, sort_order):
             by=f'{sort_by}_sort', ascending=ascending, na_position='last')
         return temp_df.drop(columns=[f'{sort_by}_sort'])
     else:
-        # For date/time columns, put NaT values at the end
+        # For date/time columns, put NaT/None values at the end
         return df.sort_values(by=sort_by, ascending=ascending, na_position='last')
 
 
@@ -890,13 +912,7 @@ def main():
             "No data loaded. Please check if the Excel file exists in the working directory.")
         return
 
-    # Display term information at the top
-    if 'TERM' in df.columns and not df.empty:
-        term = df['TERM'].iloc[0] if not df['TERM'].isna(
-        ).all() else "Unknown Term"
-        st.title(f"📚 HKU Course Explorer - {term}")
-    else:
-        st.title("📚 HKU Course Explorer")
+    st.title("📚 HKU Course Explorer")
 
     # Navigation
     st.sidebar.markdown("---")
@@ -908,8 +924,7 @@ def main():
     )
 
     if page == "All Courses":
-        st.markdown(
-            "Browse and filter course schedules from the uploaded Excel file.")
+        st.markdown("Browse and filter course schedules.")
 
         # Display data info
         st.sidebar.markdown(f"**Total records:** {len(df)}")
