@@ -219,6 +219,20 @@ def create_filters_panel(df):
         if selected_section != 'All':
             filters['CLASS SECTION'] = selected_section
 
+    # Term filter
+    if 'TERM' in df.columns:
+        terms = df['TERM'].unique()
+        terms = [term for term in terms if term !=
+                 '' and pd.notna(term) and term != 'nan']
+        terms = ['All'] + sorted(terms)
+        selected_term = st.sidebar.selectbox(
+            "Term",
+            terms,
+            key="term_filter"
+        )
+        if selected_term != 'All':
+            filters['TERM'] = selected_term
+
     # Curriculum filter (renamed from ACAD_CAREER)
     if 'ACAD_CAREER' in df.columns:
         curricula = df['ACAD_CAREER'].unique()
@@ -368,7 +382,7 @@ def create_filters_panel(df):
     st.sidebar.subheader("Sorting Options")
 
     sort_options = ['COURSE CODE', 'CLASS SECTION', 'OFFER DEPT',
-                    'ACAD_CAREER', 'START DATE', 'WEEKDAY', 'START TIME', 'END TIME']
+                    'ACAD_CAREER', 'TERM', 'START DATE', 'WEEKDAY', 'START TIME', 'END TIME']
     available_sort_options = [opt for opt in sort_options if opt in df.columns]
     sort_by = st.sidebar.selectbox(
         "Sort by", available_sort_options, key="sort_by")
@@ -411,6 +425,20 @@ def create_current_classes_filters_panel(df):
         )
         if selected_section != 'All':
             filters['CLASS SECTION'] = selected_section
+
+    # Term filter
+    if 'TERM' in df.columns:
+        terms = df['TERM'].unique()
+        terms = [term for term in terms if term !=
+                 '' and pd.notna(term) and term != 'nan']
+        terms = ['All'] + sorted(terms)
+        selected_term = st.sidebar.selectbox(
+            "Term",
+            terms,
+            key="current_term_filter"
+        )
+        if selected_term != 'All':
+            filters['TERM'] = selected_term
 
     # Curriculum filter
     if 'ACAD_CAREER' in df.columns:
@@ -495,6 +523,20 @@ def create_upcoming_classes_filters_panel(df):
         )
         if selected_section != 'All':
             filters['CLASS SECTION'] = selected_section
+
+    # Term filter
+    if 'TERM' in df.columns:
+        terms = df['TERM'].unique()
+        terms = [term for term in terms if term !=
+                 '' and pd.notna(term) and term != 'nan']
+        terms = ['All'] + sorted(terms)
+        selected_term = st.sidebar.selectbox(
+            "Term",
+            terms,
+            key="upcoming_term_filter"
+        )
+        if selected_term != 'All':
+            filters['TERM'] = selected_term
 
     # Curriculum filter
     if 'ACAD_CAREER' in df.columns:
@@ -592,7 +634,7 @@ def apply_sorting(df, sort_by, sort_order):
     ascending = sort_order == 'Ascending'
 
     # For string columns, handle empty strings and NaN
-    if sort_by in ['COURSE CODE', 'CLASS SECTION', 'OFFER DEPT', 'ACAD_CAREER', 'WEEKDAY']:
+    if sort_by in ['COURSE CODE', 'CLASS SECTION', 'OFFER DEPT', 'ACAD_CAREER', 'TERM', 'WEEKDAY']:
         # Create a temporary column for sorting that handles empty values
         temp_df = df.copy()
         temp_df[f'{sort_by}_sort'] = temp_df[sort_by].replace(
@@ -662,8 +704,9 @@ def display_course_item(row):
             class_section = row.get('CLASS SECTION', 'N/A')
             class_number = format_class_number(row.get('CLASS NUMBER', 'N/A'))
             curriculum = row.get('ACAD_CAREER', 'N/A')
+            term = row.get('TERM', 'N/A')
             st.markdown(
-                f"Section {class_section} • Class No. {class_number} • **:{cc.get(curriculum, 'blue')}[{curriculum}]**")
+                f"Section {class_section} • Class No. {class_number} • **:{cc.get(curriculum, 'blue')}[{curriculum}]** • Term: {term}")
 
         with col2:
             weekday = row.get('WEEKDAY', 'N/A')
@@ -792,7 +835,7 @@ def display_current_classes_page(df):
     st.sidebar.subheader("Current Classes Sorting")
 
     sort_options = ['COURSE CODE', 'CLASS SECTION',
-                    'OFFER DEPT', 'ACAD_CAREER', 'START TIME', 'END TIME']
+                    'OFFER DEPT', 'ACAD_CAREER', 'TERM', 'START TIME', 'END TIME']
     available_sort_options = [opt for opt in sort_options if opt in df.columns]
     sort_by = st.sidebar.selectbox(
         "Sort by", available_sort_options, key="current_sort_by")
@@ -866,7 +909,7 @@ def display_upcoming_classes_page(df):
     st.sidebar.subheader("Upcoming Classes Sorting")
 
     sort_options = ['START TIME', 'END TIME', 'COURSE CODE',
-                    'CLASS SECTION', 'OFFER DEPT', 'ACAD_CAREER']
+                    'CLASS SECTION', 'OFFER DEPT', 'ACAD_CAREER', 'TERM']
     available_sort_options = [opt for opt in sort_options if opt in df.columns]
     sort_by = st.sidebar.selectbox(
         "Sort by", available_sort_options, key="upcoming_sort_by")
