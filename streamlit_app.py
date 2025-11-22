@@ -209,18 +209,18 @@ def create_filters_panel(df):
 
     filters = {}
 
-    # Course Code StartsWith filter (NEW)
+    # Course Code Prefix filter (NEW)
     if 'COURSE CODE' in df.columns:
         prefixes = get_course_code_prefixes(df)
         if prefixes:
             prefixes = ['All'] + prefixes
             selected_prefix = st.sidebar.selectbox(
-                "Course Code StartsWith",
+                "Course Code Prefix",
                 prefixes,
-                key="course_code_startswith_filter"
+                key="course_code_prefix_filter"
             )
             if selected_prefix != 'All':
-                filters['course_code_startswith'] = selected_prefix
+                filters['course_code_prefix'] = selected_prefix
 
     # Course Code filter
     if 'COURSE CODE' in df.columns:
@@ -431,18 +431,18 @@ def create_current_classes_filters_panel(df):
 
     filters = {}
 
-    # Course Code StartsWith filter (NEW)
+    # Course Code Prefix filter (NEW)
     if 'COURSE CODE' in df.columns:
         prefixes = get_course_code_prefixes(df)
         if prefixes:
             prefixes = ['All'] + prefixes
             selected_prefix = st.sidebar.selectbox(
-                "Course Code StartsWith",
+                "Course Code Prefix",
                 prefixes,
-                key="current_course_code_startswith_filter"
+                key="current_course_code_prefix_filter"
             )
             if selected_prefix != 'All':
-                filters['course_code_startswith'] = selected_prefix
+                filters['course_code_prefix'] = selected_prefix
 
     # Course Code filter
     if 'COURSE CODE' in df.columns:
@@ -542,18 +542,18 @@ def create_upcoming_classes_filters_panel(df):
 
     filters = {}
 
-    # Course Code StartsWith filter (NEW)
+    # Course Code Prefix filter (NEW)
     if 'COURSE CODE' in df.columns:
         prefixes = get_course_code_prefixes(df)
         if prefixes:
             prefixes = ['All'] + prefixes
             selected_prefix = st.sidebar.selectbox(
-                "Course Code StartsWith",
+                "Course Code Prefix",
                 prefixes,
-                key="upcoming_course_code_startswith_filter"
+                key="upcoming_course_code_prefix_filter"
             )
             if selected_prefix != 'All':
-                filters['course_code_startswith'] = selected_prefix
+                filters['course_code_prefix'] = selected_prefix
 
     # Course Code filter
     if 'COURSE CODE' in df.columns:
@@ -653,12 +653,12 @@ def apply_filters(df, filters):
 
     # Apply column filters
     for column, value in filters.items():
-        if column not in ['date_range', 'time_range', 'venue_provided', 'course_code_startswith']:
+        if column not in ['date_range', 'time_range', 'venue_provided', 'course_code_prefix']:
             filtered_df = filtered_df[filtered_df[column] == value]
 
-    # Apply course code startsWith filter (NEW)
-    if 'course_code_startswith' in filters:
-        prefix = filters['course_code_startswith']
+    # Apply course code prefix filter (NEW)
+    if 'course_code_prefix' in filters:
+        prefix = filters['course_code_prefix']
         filtered_df = filtered_df[filtered_df['COURSE CODE'].str.startswith(prefix, na=False)]
 
     # Apply venue provided filter
