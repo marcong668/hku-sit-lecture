@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, time, date, timedelta
 import pytz
+import warnings
 
 # Configure the page
 st.set_page_config(
@@ -13,6 +14,62 @@ st.set_page_config(
 
 # Hong Kong timezone
 HK_TIMEZONE = pytz.timezone('Asia/Hong_Kong')
+
+# Suppress specific pandas warnings
+warnings.filterwarnings('ignore', category=UserWarning, module='pandas')
+
+
+def parse_time_value(time_val):
+    """Parse time value from various formats"""
+    if pd.isna(time_val) or time_val is None or time_val == '' or time_val == 'nan':
+        return None
+
+    # If it's already a time object, return it
+    if isinstance(time_val, time):
+        return time_val
+
+    # If it's a string, try to parse it
+    if isinstance(time_val, str):
+        # Remove any whitespace
+        time_val = time_val.strip()
+
+        # Try HH:MM format
+        if ':' in time_val:
+            parts = time_val.split(':')
+            try:
+                hours = int(parts[0])
+                minutes = int(parts[1])
+                if 0 <= hours <= 23 and 0 <= minutes <= 59:
+                    return time(hours, minutes)
+            except (ValueError, IndexError):
+                pass
+
+        # Try HH:MM:SS format
+        if time_val.count(':') == 2:
+            parts = time_val.split(':')
+            try:
+                hours = int(parts[0])
+                minutes = int(parts[1])
+                seconds = int(parts[2])
+                if 0 <= hours <= 23 and 0 <= minutes <= 59 and 0 <= seconds <= 59:
+                    return time(hours, minutes, seconds)
+            except (ValueError, IndexError):
+                pass
+
+    # If it's a float (Excel serial time), convert it
+    try:
+        if isinstance(time_val, (int, float)) or (isinstance(time_val, str) and '.' in time_val):
+            excel_time = float(time_val)
+            # Excel time is fraction of day, so multiply by 24 for hours
+            total_seconds = int(excel_time * 24 * 3600)
+            hours = total_seconds // 3600
+            minutes = (total_seconds % 3600) // 60
+            if 0 <= hours <= 23 and 0 <= minutes <= 59:
+                return time(hours, minutes)
+    except (ValueError, TypeError):
+        pass
+
+    return None
 
 
 @st.cache_data
@@ -71,22 +128,26 @@ def load_and_preprocess_data():
 
         df['WEEKDAY'] = df.apply(get_weekday, axis=1)
 
-        # Convert date columns to datetime
+        # Convert date columns to datetime with explicit format
         date_columns = ['START DATE', 'END DATE']
         for col in date_columns:
             if col in df.columns:
                 # Handle empty strings and convert to datetime
                 df[col] = df[col].replace('', pd.NaT)
-                df[col] = pd.to_datetime(df[col], errors='coerce')
+                # Try multiple date formats
+                df[col] = pd.to_datetime(
+                    df[col], errors='coerce', format='mixed')
 
-        # Handle time columns
+        # Handle time columns with custom parsing to avoid warnings
         time_columns = ['START TIME', 'END TIME']
         for col in time_columns:
             if col in df.columns:
-                # Replace empty strings with NaT
-                df[col] = df[col].replace('', pd.NaT)
-                # Convert to datetime to extract time
-                df[col] = pd.to_datetime(df[col], errors='coerce').dt.time
+                # Apply custom time parsing
+                df[col] = df[col].apply(parse_time_value)
+
+                # Convert any remaining invalid values to None
+                df[col] = df[col].apply(
+                    lambda x: x if isinstance(x, time) else None)
 
         return df
 
@@ -207,10 +268,12 @@ def create_filters_panel(df):
         # Get available time values for the time inputs
         all_times = []
         if 'START TIME' in df.columns:
-            start_times = [t for t in df['START TIME'].dropna() if t != '']
+            start_times = [t for t in df['START TIME'].dropna()
+                           if t != '' and t is not None]
             all_times.extend(start_times)
         if 'END TIME' in df.columns:
-            end_times = [t for t in df['END TIME'].dropna() if t != '']
+            end_times = [t for t in df['END TIME'].dropna() if t !=
+                         '' and t is not None]
             all_times.extend(end_times)
 
         if all_times:
@@ -578,7 +641,7 @@ def display_course_item(row):
             class_number = format_class_number(row.get('CLASS NUMBER', 'N/A'))
             curriculum = row.get('ACAD_CAREER', 'N/A')
             st.markdown(
-                f"Section {class_section} • Class No. {class_number} • **:{cc[curriculum]}[{curriculum}]**")
+                f"Section {class_section} • Class No. {class_number} • **:{cc.get(curriculum, 'blue')}[{curriculum}]**")
 
         with col2:
             weekday = row.get('WEEKDAY', 'N/A')
@@ -586,7 +649,7 @@ def display_course_item(row):
             end_time = format_time(row.get('END TIME'))
             venue = row.get('VENUE', 'N/A')
             st.markdown(
-                f"**:{wc[weekday]}[{weekday}] {start_time}-{end_time}** @ Venue: **{venue}**")
+                f"**:{wc.get(weekday, 'gray')}[{weekday}] {start_time}-{end_time}** @ Venue: **{venue}**")
             start_date = format_date(row.get('START DATE'))
             end_date = format_date(row.get('END DATE'))
             st.markdown(f"**Date:** {start_date} to {end_date}")
