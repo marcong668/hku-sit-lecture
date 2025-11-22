@@ -8,7 +8,7 @@ import warnings
 # Configure the page
 st.set_page_config(
     page_title="HKU Course Explorer",
-    page_icon="📚",
+    page_icon="📅",
     layout="wide"
 )
 
@@ -1019,7 +1019,7 @@ def main():
             "No data loaded. Please check if the Excel file exists in the working directory.")
         return
 
-    st.title("📚 HKU Course Explorer")
+    st.title("📅 HKU Course Explorer")
 
     # Navigation
     st.sidebar.markdown("---")
