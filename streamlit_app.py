@@ -151,13 +151,13 @@ def load_and_preprocess_data():
 
         # Define special columns that need specific aggregation
         special_agg = {
-            'START TIME': 'first',
-            'END TIME': 'first'
+            'START DATE': 'first',
+            'END DATE': 'last'
         }
 
         # Automatically add 'first' for all other columns (excluding groupby columns)
         all_columns = df.columns.tolist()
-        groupby_columns = ['CLASS NUMBER', 'WEEKDAY']
+        groupby_columns = ['TERM', 'COURSE CODE', 'VENUE', 'WEEKDAY', 'START TIME', 'END TIME']
         other_columns = [
             col for col in all_columns if col not in groupby_columns]
 
@@ -770,7 +770,7 @@ def display_course_item(row):
             curriculum = row.get('ACAD_CAREER', 'N/A')
             term = row.get('TERM', 'N/A')
             st.markdown(
-                f"Section {class_section} • Class No. {class_number} • **:{cc.get(curriculum, 'blue')}[{curriculum}]** • Term: {term}")
+                f"Section {class_section} • Class No. {class_number} • **:{cc.get(curriculum, 'blue')}[{curriculum}]** • {term}")
 
         with col2:
             weekday = row.get('WEEKDAY', 'N/A')
