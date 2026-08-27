@@ -180,18 +180,18 @@ def get_course_code_prefixes(df):
     """Extract unique course code prefixes (first 4 letters) from the dataset"""
     if 'COURSE CODE' not in df.columns:
         return []
-    
+
     # Get all course codes, filter out empty/invalid values
     course_codes = df['COURSE CODE'].unique()
     course_codes = [code for code in course_codes if code != '' and pd.notna(code) and code != 'nan']
-    
+
     # Extract prefixes (first 4 characters)
     prefixes = set()
     for code in course_codes:
         if len(code) >= 4:
             prefix = code[:4].upper()
             prefixes.add(prefix)
-    
+
     # Convert to sorted list
     return sorted(list(prefixes))
 
@@ -237,7 +237,7 @@ def create_filters_panel(df):
         if selected_course != 'All':
             filters['COURSE CODE'] = selected_course
 
-    # NEW: Course Title Search
+    # Course Title Search
     if 'COURSE TITLE' in df.columns:
         course_title_search = st.sidebar.text_input(
             "Course Title Search",
@@ -249,7 +249,6 @@ def create_filters_panel(df):
 
     # Class Section filter
     if 'CLASS SECTION' in df.columns:
-        # Get unique class sections, filter out empty strings and NaN, then sort
         class_sections = df['CLASS SECTION'].unique()
         class_sections = [section for section in class_sections if section != '' and pd.notna(
             section) and section != 'nan']
@@ -276,7 +275,7 @@ def create_filters_panel(df):
         if selected_term != 'All':
             filters['TERM'] = selected_term
 
-    # Curriculum filter (renamed from ACAD_CAREER)
+    # Curriculum filter
     if 'ACAD_CAREER' in df.columns:
         curricula = df['ACAD_CAREER'].unique()
         curricula = [cur for cur in curricula if cur !=
@@ -441,7 +440,7 @@ def create_current_classes_filters_panel(df):
 
     filters = {}
 
-    # Course Code Prefix filter (NEW)
+    # Course Code Prefix filter
     if 'COURSE CODE' in df.columns:
         prefixes = get_course_code_prefixes(df)
         if prefixes:
@@ -468,7 +467,7 @@ def create_current_classes_filters_panel(df):
         if selected_course != 'All':
             filters['COURSE CODE'] = selected_course
 
-    # NEW: Course Title Search
+    # Course Title Search
     if 'COURSE TITLE' in df.columns:
         course_title_search = st.sidebar.text_input(
             "Course Title Search",
@@ -520,7 +519,7 @@ def create_current_classes_filters_panel(df):
         if selected_curriculum != 'All':
             filters['ACAD_CAREER'] = selected_curriculum
 
-    # Department filter (OFFER DEPT)
+    # Department filter
     if 'OFFER DEPT' in df.columns:
         departments = df['OFFER DEPT'].unique()
         departments = [dept for dept in departments if dept !=
@@ -562,7 +561,7 @@ def create_upcoming_classes_filters_panel(df):
 
     filters = {}
 
-    # Course Code Prefix filter (NEW)
+    # Course Code Prefix filter
     if 'COURSE CODE' in df.columns:
         prefixes = get_course_code_prefixes(df)
         if prefixes:
@@ -589,7 +588,7 @@ def create_upcoming_classes_filters_panel(df):
         if selected_course != 'All':
             filters['COURSE CODE'] = selected_course
 
-    # NEW: Course Title Search
+    # Course Title Search
     if 'COURSE TITLE' in df.columns:
         course_title_search = st.sidebar.text_input(
             "Course Title Search",
@@ -641,7 +640,7 @@ def create_upcoming_classes_filters_panel(df):
         if selected_curriculum != 'All':
             filters['ACAD_CAREER'] = selected_curriculum
 
-    # Department filter (OFFER DEPT)
+    # Department filter
     if 'OFFER DEPT' in df.columns:
         departments = df['OFFER DEPT'].unique()
         departments = [dept for dept in departments if dept !=
@@ -686,12 +685,12 @@ def apply_filters(df, filters):
         if column not in ['date_range', 'time_range', 'venue_provided', 'course_code_prefix', 'course_title_search']:
             filtered_df = filtered_df[filtered_df[column] == value]
 
-    # Apply course code prefix filter (NEW)
+    # Apply course code prefix filter
     if 'course_code_prefix' in filters:
         prefix = filters['course_code_prefix']
         filtered_df = filtered_df[filtered_df['COURSE CODE'].str.startswith(prefix, na=False)]
 
-    # NEW: Apply course title search filter
+    # Apply course title search filter
     if 'course_title_search' in filters:
         search_str = filters['course_title_search']
         if 'COURSE TITLE' in filtered_df.columns:
@@ -705,7 +704,6 @@ def apply_filters(df, filters):
     # Apply date range filter
     if 'date_range' in filters:
         start_date, end_date = filters['date_range']
-        # Filter out rows with NaT dates before comparison
         date_filtered = filtered_df[filtered_df['START DATE'].notna(
         ) & filtered_df['END DATE'].notna()]
         filtered_df = date_filtered[
@@ -716,7 +714,6 @@ def apply_filters(df, filters):
     # Apply time range filter
     if 'time_range' in filters:
         start_time_filter, end_time_filter = filters['time_range']
-        # Filter classes that start after or at the selected start time AND end before or at the selected end time
         time_filtered = filtered_df[
             filtered_df['START TIME'].notna() &
             filtered_df['END TIME'].notna()
@@ -735,7 +732,6 @@ def apply_sorting(df, sort_by, sort_order):
 
     # For string columns, handle empty strings and NaN
     if sort_by in ['COURSE CODE', 'CLASS SECTION', 'OFFER DEPT', 'ACAD_CAREER', 'TERM', 'WEEKDAY']:
-        # Create a temporary column for sorting that handles empty values
         temp_df = df.copy()
         temp_df[f'{sort_by}_sort'] = temp_df[sort_by].replace(
             '', 'zzzz')  # Push empty strings to end
@@ -743,7 +739,6 @@ def apply_sorting(df, sort_by, sort_order):
             by=f'{sort_by}_sort', ascending=ascending, na_position='last')
         return temp_df.drop(columns=[f'{sort_by}_sort'])
     else:
-        # For date/time columns, put NaT/None values at the end
         return df.sort_values(by=sort_by, ascending=ascending, na_position='last')
 
 
@@ -775,11 +770,14 @@ def format_class_number(class_num):
         return str(class_num)
 
 
-def display_course_item(row):
-    """Display a single course item in a compact format"""
+def display_course_item(row, index=None):
+    """Display a single course item in a compact format.
+    If index is provided, show an "Add to Watchlist" button."""
     with st.container():
-        # Create a more compact layout using columns with smaller spacing
+        # Use columns for layout: 3 main columns + 1 for watchlist button
         col1, col2, col3 = st.columns([3, 3, 3])
+        if index is not None:
+            col4 = st.columns([1])[0]  # Narrower for button
         cc = {
             "NAWD": "green",
             "RPG": "violet",
@@ -822,11 +820,35 @@ def display_course_item(row):
         with col3:
             dept = row.get('OFFER DEPT', 'N/A')
             st.markdown(f"{dept}")
-            # Truncate instructors if too long
             instructors = row.get('INSTRUCTOR', 'N/A')
             if instructors != 'N/A' and len(str(instructors)) > 25:
                 instructors = str(instructors)[:25] + "..."
             st.markdown(f"**Instructor:** {instructors}")
+
+        # Watchlist button
+        if index is not None:
+            with col4:
+                # Unique key based on index
+                button_key = f"add_watchlist_{index}"
+                if st.button("➕ Watchlist", key=button_key, help="Add to watchlist"):
+                    # Check if already in watchlist (compare unique identifier)
+                    unique_id = f"{row.get('COURSE CODE', '')}_{row.get('CLASS SECTION', '')}_{format_class_number(row.get('CLASS NUMBER', ''))}"
+                    if 'watchlist' not in st.session_state:
+                        st.session_state.watchlist = []
+                    # Check if already present
+                    already = False
+                    for item in st.session_state.watchlist:
+                        if item.get('unique_id') == unique_id:
+                            already = True
+                            break
+                    if already:
+                        st.warning("This course is already in your watchlist.")
+                    else:
+                        # Convert row to dict and add
+                        watch_item = row.to_dict()
+                        watch_item['unique_id'] = unique_id
+                        st.session_state.watchlist.append(watch_item)
+                        st.success("Added to watchlist!")
 
         # Thin separator line
         st.markdown("<hr style='margin: 8px 0;'>", unsafe_allow_html=True)
@@ -838,7 +860,6 @@ def get_current_classes(df):
     current_time = now_hk.time()
     current_date = now_hk.date()
 
-    # Map weekday names
     weekday_map = {
         'Monday': 'MON',
         'Tuesday': 'TUE',
@@ -850,14 +871,12 @@ def get_current_classes(df):
     }
     current_weekday = weekday_map[now_hk.strftime('%A')]
 
-    # Filter for today's classes on current weekday
     today_classes = df[
         (df['WEEKDAY'] == current_weekday) &
         (df['START DATE'].dt.date <= current_date) &
         (df['END DATE'].dt.date >= current_date)
     ].copy()
 
-    # Filter for classes that are currently running
     current_classes = today_classes[
         (today_classes['START TIME'] <= current_time) &
         (today_classes['END TIME'] >= current_time)
@@ -872,7 +891,6 @@ def get_upcoming_classes_today(df):
     current_time = now_hk.time()
     current_date = now_hk.date()
 
-    # Map weekday names
     weekday_map = {
         'Monday': 'MON',
         'Tuesday': 'TUE',
@@ -884,16 +902,13 @@ def get_upcoming_classes_today(df):
     }
     current_weekday = weekday_map[now_hk.strftime('%A')]
 
-    # Filter for today's classes on current weekday
     today_classes = df[
         (df['WEEKDAY'] == current_weekday) &
         (df['START DATE'].dt.date <= current_date) &
         (df['END DATE'].dt.date >= current_date)
     ].copy()
 
-    # Filter for classes that haven't started yet today
-    upcoming_classes = today_classes[today_classes['START TIME']
-                                     > current_time]
+    upcoming_classes = today_classes[today_classes['START TIME'] > current_time]
 
     return upcoming_classes
 
@@ -902,7 +917,6 @@ def display_current_classes_page(df):
     """Display page for currently running classes"""
     st.header("🏫 Currently Running Classes")
 
-    # Get current date and time info in HK timezone
     now_hk = get_hk_time()
     current_time = now_hk.strftime('%H:%M')
     current_date = now_hk.strftime('%Y-%m-%d')
@@ -912,7 +926,6 @@ def display_current_classes_page(df):
     st.markdown(
         f"**Current Time (Hong Kong {timezone_info}):** {current_time} | **Date:** {current_date} | **Day:** {current_weekday}")
 
-    # Refresh button
     col1, col2, col3 = st.columns([3, 3, 3])
     with col1:
         if st.button("🔄 Refresh Current Time", type="primary", use_container_width=True):
@@ -920,17 +933,13 @@ def display_current_classes_page(df):
 
     st.markdown("---")
 
-    # Get current classes
     current_classes = get_current_classes(df)
 
-    # Create filters for current classes
     filters = create_current_classes_filters_panel(df)
 
-    # Apply filters
     if filters:
         current_classes = apply_filters(current_classes, filters)
 
-    # Sorting options for current classes
     st.sidebar.markdown("---")
     st.sidebar.subheader("Current Classes Sorting")
 
@@ -942,10 +951,8 @@ def display_current_classes_page(df):
     sort_order = st.sidebar.radio(
         "Order", ['Ascending', 'Descending'], key="current_sort_order")
 
-    # Apply sorting
     current_classes = apply_sorting(current_classes, sort_by, sort_order)
 
-    # Display results
     if current_classes.empty:
         st.info("No classes are currently running.")
         st.markdown("💡 *All classes have either ended or haven't started yet.*")
@@ -953,7 +960,6 @@ def display_current_classes_page(df):
         st.markdown(
             f"**:green[Found {len(current_classes)} classes currently running]**")
 
-        # Pagination
         if 'current_display_count' not in st.session_state:
             st.session_state.current_display_count = 20
 
@@ -961,9 +967,8 @@ def display_current_classes_page(df):
             st.session_state.current_display_count)
 
         for idx, row in display_df.iterrows():
-            display_course_item(row)
+            display_course_item(row, index=idx)  # Pass index for watchlist button
 
-        # Load more button
         if len(current_classes) > st.session_state.current_display_count:
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
@@ -976,7 +981,6 @@ def display_upcoming_classes_page(df):
     """Display page for upcoming classes today"""
     st.header("⏰ Upcoming Classes Today")
 
-    # Get current date and time info in HK timezone
     now_hk = get_hk_time()
     current_time = now_hk.strftime('%H:%M')
     current_date = now_hk.strftime('%Y-%m-%d')
@@ -986,7 +990,6 @@ def display_upcoming_classes_page(df):
     st.markdown(
         f"**Current Time (Hong Kong {timezone_info}):** {current_time} | **Date:** {current_date} | **Day:** {current_weekday}")
 
-    # Refresh button
     col1, col2, col3 = st.columns([3, 3, 3])
     with col1:
         if st.button("🔄 Refresh Current Time", type="primary", use_container_width=True):
@@ -994,17 +997,13 @@ def display_upcoming_classes_page(df):
 
     st.markdown("---")
 
-    # Get upcoming classes
     upcoming_classes = get_upcoming_classes_today(df)
 
-    # Create filters for upcoming classes
     filters = create_upcoming_classes_filters_panel(df)
 
-    # Apply filters
     if filters:
         upcoming_classes = apply_filters(upcoming_classes, filters)
 
-    # Sorting options for upcoming classes
     st.sidebar.markdown("---")
     st.sidebar.subheader("Upcoming Classes Sorting")
 
@@ -1016,10 +1015,8 @@ def display_upcoming_classes_page(df):
     sort_order = st.sidebar.radio(
         "Order", ['Ascending', 'Descending'], key="upcoming_sort_order")
 
-    # Apply sorting
     upcoming_classes = apply_sorting(upcoming_classes, sort_by, sort_order)
 
-    # Display results
     if upcoming_classes.empty:
         st.info("No more classes scheduled for today.")
         st.markdown("🎉 *You're done for the day!*")
@@ -1027,7 +1024,6 @@ def display_upcoming_classes_page(df):
         st.markdown(
             f"**:green[Found {len(upcoming_classes)} upcoming classes today]**")
 
-        # Pagination
         if 'upcoming_display_count' not in st.session_state:
             st.session_state.upcoming_display_count = 20
 
@@ -1035,15 +1031,132 @@ def display_upcoming_classes_page(df):
             st.session_state.upcoming_display_count)
 
         for idx, row in display_df.iterrows():
-            display_course_item(row)
+            display_course_item(row, index=idx)  # Pass index for watchlist button
 
-        # Load more button
         if len(upcoming_classes) > st.session_state.upcoming_display_count:
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
                 if st.button(f"Load More ({min(20, len(upcoming_classes) - st.session_state.upcoming_display_count)} more available)", key="upcoming_load_more"):
                     st.session_state.upcoming_display_count += 20
                     st.rerun()
+
+
+def generate_timetable(watchlist):
+    """
+    Generate a timetable grid from watchlist items.
+    Returns a DataFrame with weekdays as columns and time slots as rows.
+    Cells contain course codes, and conflicts are marked.
+    """
+    weekdays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']
+    # Use 30-minute intervals from 8:00 to 20:00 (adjust as needed)
+    time_slots = []
+    start_hour = 8
+    end_hour = 20
+    for h in range(start_hour, end_hour):
+        for m in [0, 30]:
+            time_slots.append(time(h, m))
+    # Ensure final slot at end_hour:00 if needed, but we'll handle up to end_hour-0:30
+    # Actually we want slots up to 19:30 for 8-20 range; adjust as needed.
+
+    # Create empty timetable
+    timetable = pd.DataFrame(index=time_slots, columns=weekdays)
+    timetable = timetable.fillna('')
+
+    # Track occupancy for conflict detection
+    occupancy = {day: {slot: [] for slot in time_slots} for day in weekdays}
+
+    for item in watchlist:
+        code = item.get('COURSE CODE', '')
+        weekday = item.get('WEEKDAY', '')
+        start = item.get('START TIME')
+        end = item.get('END TIME')
+        if not code or not weekday or weekday not in weekdays or start is None or end is None:
+            continue
+
+        # Determine which slots this course occupies
+        current = start
+        while current < end:
+            # Find the next slot boundary
+            # For simplicity, we use 30-min granularity; adjust if times are not aligned
+            # We'll find slots that overlap with [start, end)
+            if current.minute < 30:
+                slot = time(current.hour, 0)
+            else:
+                slot = time(current.hour, 30)
+            if slot >= end:
+                break
+            if slot not in occupancy[weekday]:
+                # This shouldn't happen if slots cover the range
+                continue
+            occupancy[weekday][slot].append(code)
+            # Move to next slot
+            current = (datetime.combine(date.today(), current) + timedelta(minutes=30)).time()
+
+    # Fill timetable and detect conflicts
+    for day in weekdays:
+        for slot in time_slots:
+            codes = occupancy[day][slot]
+            if len(codes) == 1:
+                timetable.loc[slot, day] = codes[0]
+            elif len(codes) > 1:
+                timetable.loc[slot, day] = '⚠️ CONFLICT: ' + ', '.join(codes)
+
+    # Convert index to string for display
+    timetable.index = [t.strftime('%H:%M') for t in timetable.index]
+    return timetable
+
+
+def display_watchlist_page(df):
+    """Display the watchlist management and timetable page"""
+    st.header("📋 My Watchlist & Timetable")
+
+    if 'watchlist' not in st.session_state:
+        st.session_state.watchlist = []
+
+    watchlist = st.session_state.watchlist
+
+    if not watchlist:
+        st.info("Your watchlist is empty. Add courses from the All Courses or Today pages.")
+        return
+
+    # Show watchlist items with delete buttons
+    st.subheader("Courses in Watchlist")
+    for i, item in enumerate(watchlist):
+        col1, col2, col3 = st.columns([3, 3, 1])
+        with col1:
+            st.markdown(f"**{item.get('COURSE CODE', 'N/A')}** - {item.get('COURSE TITLE', 'N/A')}")
+        with col2:
+            weekday = item.get('WEEKDAY', 'N/A')
+            start = format_time(item.get('START TIME'))
+            end = format_time(item.get('END TIME'))
+            st.markdown(f"{weekday} {start}-{end}")
+        with col3:
+            if st.button("🗑️ Delete", key=f"delete_watchlist_{i}"):
+                # Remove item from watchlist
+                st.session_state.watchlist.pop(i)
+                st.rerun()
+        st.markdown("<hr style='margin: 4px 0;'>", unsafe_allow_html=True)
+
+    # Button to show timetable
+    if st.button("📅 Show Timetable", type="primary"):
+        st.subheader("Timetable from Watchlist")
+        timetable = generate_timetable(watchlist)
+        # Display as a styled dataframe
+        st.dataframe(timetable, use_container_width=True)
+
+        # Detect conflicts summary
+        conflicts = []
+        for day in timetable.columns:
+            for slot in timetable.index:
+                cell = timetable.loc[slot, day]
+                if cell.startswith('⚠️ CONFLICT'):
+                    conflicts.append(f"{day} {slot}: {cell}")
+        if conflicts:
+            st.markdown("### ⚠️ Time Conflicts Detected")
+            for c in conflicts:
+                st.error(c)
+        else:
+            st.success("No time conflicts in your watchlist.")
 
 
 def main():
@@ -1062,40 +1175,32 @@ def main():
     st.sidebar.subheader("Navigation")
     page = st.sidebar.radio(
         "Go to:",
-        ["All Courses", "Current Classes", "Upcoming Classes Today"],
+        ["All Courses", "Current Classes", "Upcoming Classes Today", "Watchlist & Timetable"],
         key="navigation"
     )
 
     if page == "All Courses":
         st.markdown("Browse and filter course schedules.")
-
-        # Display data info
         st.sidebar.markdown(f"**Total records:** {len(df)}")
 
-        # Create filters panel
         filters, sort_by, sort_order = create_filters_panel(df)
 
-        # Apply filters and sorting
         filtered_df = apply_filters(df, filters)
         filtered_df = apply_sorting(filtered_df, sort_by, sort_order)
 
-        # Display results count
         st.markdown(f"**:green[Found {len(filtered_df)} matching records]**")
 
-        # Pagination
         if 'display_count' not in st.session_state:
             st.session_state.display_count = 20
 
-        # Display courses
         display_df = filtered_df.head(st.session_state.display_count)
 
         if display_df.empty:
             st.info("No courses match your filters. Try adjusting your criteria.")
         else:
             for idx, row in display_df.iterrows():
-                display_course_item(row)
+                display_course_item(row, index=idx)
 
-        # Load more button
         if len(filtered_df) > st.session_state.display_count:
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
@@ -1113,6 +1218,9 @@ def main():
 
     elif page == "Upcoming Classes Today":
         display_upcoming_classes_page(df)
+
+    elif page == "Watchlist & Timetable":
+        display_watchlist_page(df)
 
 
 if __name__ == "__main__":
