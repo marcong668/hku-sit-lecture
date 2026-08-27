@@ -77,7 +77,7 @@ def load_and_preprocess_data():
     """Load and preprocess the Excel data"""
     try:
         # Load the Excel file
-        df = pd.read_excel('2025-26_class_timetable_20250831.xlsx')
+        df = pd.read_excel('2026-27 class_timetable_20260817.xlsx')
 
         # Strip whitespace from column names
         df.columns = df.columns.str.strip()
@@ -96,7 +96,7 @@ def load_and_preprocess_data():
 
             # Replace "Faculty of ..." with "... Faculty"
             df['OFFER DEPT'] = df['OFFER DEPT'].apply(
-                lambda x: x + ' Faculty' if x and x.startswith('Faculty') else x)
+                lambda x: str(x) + ' Faculty' if x and str(x).startswith('Faculty') else x)
             df['OFFER DEPT'] = df['OFFER DEPT'].str.replace(
                 'Faculty of ', '', regex=False)
 
@@ -236,6 +236,16 @@ def create_filters_panel(df):
         )
         if selected_course != 'All':
             filters['COURSE CODE'] = selected_course
+
+    # NEW: Course Title Search
+    if 'COURSE TITLE' in df.columns:
+        course_title_search = st.sidebar.text_input(
+            "Course Title Search",
+            key="course_title_search_filter",
+            placeholder="e.g., Introduction to..."
+        )
+        if course_title_search.strip():
+            filters['course_title_search'] = course_title_search.strip()
 
     # Class Section filter
     if 'CLASS SECTION' in df.columns:
@@ -458,6 +468,16 @@ def create_current_classes_filters_panel(df):
         if selected_course != 'All':
             filters['COURSE CODE'] = selected_course
 
+    # NEW: Course Title Search
+    if 'COURSE TITLE' in df.columns:
+        course_title_search = st.sidebar.text_input(
+            "Course Title Search",
+            key="current_course_title_search_filter",
+            placeholder="e.g., Introduction to..."
+        )
+        if course_title_search.strip():
+            filters['course_title_search'] = course_title_search.strip()
+
     # Class Section filter
     if 'CLASS SECTION' in df.columns:
         class_sections = df['CLASS SECTION'].unique()
@@ -569,6 +589,16 @@ def create_upcoming_classes_filters_panel(df):
         if selected_course != 'All':
             filters['COURSE CODE'] = selected_course
 
+    # NEW: Course Title Search
+    if 'COURSE TITLE' in df.columns:
+        course_title_search = st.sidebar.text_input(
+            "Course Title Search",
+            key="upcoming_course_title_search_filter",
+            placeholder="e.g., Introduction to..."
+        )
+        if course_title_search.strip():
+            filters['course_title_search'] = course_title_search.strip()
+
     # Class Section filter
     if 'CLASS SECTION' in df.columns:
         class_sections = df['CLASS SECTION'].unique()
@@ -653,13 +683,19 @@ def apply_filters(df, filters):
 
     # Apply column filters
     for column, value in filters.items():
-        if column not in ['date_range', 'time_range', 'venue_provided', 'course_code_prefix']:
+        if column not in ['date_range', 'time_range', 'venue_provided', 'course_code_prefix', 'course_title_search']:
             filtered_df = filtered_df[filtered_df[column] == value]
 
     # Apply course code prefix filter (NEW)
     if 'course_code_prefix' in filters:
         prefix = filters['course_code_prefix']
         filtered_df = filtered_df[filtered_df['COURSE CODE'].str.startswith(prefix, na=False)]
+
+    # NEW: Apply course title search filter
+    if 'course_title_search' in filters:
+        search_str = filters['course_title_search']
+        if 'COURSE TITLE' in filtered_df.columns:
+            filtered_df = filtered_df[filtered_df['COURSE TITLE'].str.contains(search_str, case=False, na=False)]
 
     # Apply venue provided filter
     if 'venue_provided' in filters and filters['venue_provided']:
